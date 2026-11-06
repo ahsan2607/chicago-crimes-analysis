@@ -1,182 +1,158 @@
 ================================================================================
-ROADMAP & RENCANA KERJA STRATEGIS ANALISIS BIG DATA KRIMINALITAS CHICAGO
+ROADMAP & RENCANA KERJA STRATEGIS ANALISIS BIG DATA KRIMINALITAS KOTA CHICAGO
 Proyek Ujian Tengah Semester (Midterm) Big Data & Artificial Intelligence
-File Referensi Utama: midterm_part1_to_3_pyspark.ipynb
+Fokus Utama: Metodologi Pemecahan 4 Pertanyaan Analitis (4Q) Berbasis Data Aktual
+File Notebook Utama: midterm_part1_to_3_pyspark.ipynb
+================================================================================
+
+PRINSIP FUNDAMENTAL ANALISIS:
+1. Insight adalah HASIL EMPIRIS (outcome/finding), BUKAN dogma atau standar yang 
+   ditentukan sebelum data dianalisis.
+2. Seluruh analisis bertumpu pada data yang telah diperkaya (Enriched Silver Layer) 
+   menggunakan penyebut demografi resmi (Sensus 2010/2020) dan indikator sosio-ekonomi.
+3. Menghindari narasi dramatis yang artifisial ("paradoks" semu) dan menggantinya 
+   dengan pembuktian statistik objektif (rasio per kapita, OLS regression, density).
+
+================================================================================
+1. PEMETAAN ALUR EKSEKUSI TERHADAP 4 PERTANYAAN ANALITIS UTAMA (4Q)
 ================================================================================
 
 --------------------------------------------------------------------------------
-1. JAWABAN UTAMA: APAKAH KITA PERLU MENGULANG DARI AWAL?
+Q1: POLA TEMPORAL & BEBAN KERJA PATROLI KEPOLISIAN
 --------------------------------------------------------------------------------
-JAWABAN TEGAS: SAMA SEKALI TIDAK PERLU.
+Rumusan Masalah:
+Kapan periode waktu terjadinya lonjakan kejahatan tertinggi (distribusi per jam, 
+hari dalam seminggu, dan shift patroli polisi), serta bagaimana disparitas tingkat 
+penangkapan (arrest rate) pada masing-masing shift?
 
-Mengapa? Karena apa yang sudah kita kerjakan di Bab 1 sampai Bab 4 adalah alur 
-penelitian data science (CRISP-DM / Big Data Lifecycle) yang SEBENAR-BENARNYA:
-
-1. Di Bab 4, kita melakukan Exploratory Data Analysis (EDA) terhadap data mentah 
-   aktual yang ada di lapangan. 
-2. Ketika di Bab 4 kita menemukan fenomena seperti:
-   - "Kenapa arrest rate narkotika mendekati 100% sedangkan pencurian hanya 10%?"
-   - "Kenapa kawasan termiskin (Riverdale) kasus kejahatan absolutnya tampak kecil?"
-   - "Kenapa kawasan makmur komersial (Loop) kasus kejahatannya tampak masif?"
-   Ini BUKAN KECATATAN ataupun kesalahan kerja kita. Ini justru TEMUAN LAPANGAN 
-   yang sangat bernilai ilmiah (authentic research discoveries)!
-3. Dalam penelitian akademis, alur yang sangat dihargai oleh dosen adalah:
-   - Di EDA (Bab 4): Menemukan anomali dan keanehan pada data mentah.
-   - Di Kualitas Data (Bab 5): Mengaudit secara matematis apa yang sebenarnya terjadi 
-     (missing values, anomali koordinat, kelengkapan data per tahun).
-   - Di Analisis Lanjutan (Bab 6): Memecahkan keanehan tersebut dengan data 
-     tambahan (populasi penduduk) dan normalisasi metrik per kapita.
-   - Di Kesimpulan (Bab 7): Menyajikan kesimpulan yang fleksibel, jujur, berbasis bukti, 
-     dan mengakui keterbatasan data secara elegan.
-
-Jadi, seluruh kode, grafik, dan interpretasi yang telah kita buat di Bab 1 s.d. 4 
-tetap kita pertahankan. Kita hanya melangkah maju ke Bab 5, Bab 6, dan Bab 7.
-
+Langkah Eksekusi Analisis:
+1. Rekayasa Fitur Temporal pada Silver Layer:
+   - Ekstraksi `hour_of_day` (0-23), `day_of_week` (Senin-Minggu), dan `year`.
+   - Klasifikasi shift patroli standar Chicago Police Department:
+     * Shift 1 (Night/Graveyard): 22:00 - 05:59
+     * Shift 2 (Day/Morning): 06:00 - 13:59
+     * Shift 3 (Evening/Afternoon): 14:00 - 21:59
+2. Agregasi Spark SQL & Visualisasi:
+   - Visualisasi 1: Heatmap 2D Jam vs. Hari Kejadian (Identifikasi jam puncak).
+   - Visualisasi 2: Tren Tahunan 2001-2026 Volume Kejadian vs. Arrest Rate (%).
+   - Visualisasi 3: Distribusi Beban Patroli per Shift Kerja & Rasio Penangkapan.
+3. Parameter Output Hasil:
+   - Waktu puncak kejadian (jam rawan, hari akhir pekan vs hari kerja).
+   - Identifikasi shift dengan volume insiden tertinggi.
+   - Evaluasi efektivitas penegakan hukum (disparitas persentase penangkapan antar-shift).
 
 --------------------------------------------------------------------------------
-2. REKAP STATUS SAAT INI (BAB 1 - 4: SUDAH SELESAI & SOLID)
+Q2: STRUKTUR KATEGORI KEJAHATAN & EFEKTIVITAS PENEGAKAN HUKUM
 --------------------------------------------------------------------------------
-- Bab 1 (Perumusan Masalah & 4 Pertanyaan Bisnis): Sudah lengkap dan rapi.
-- Bab 2 (Karakteristik 5V, Arsitektur Ingestion, Parquet & Benchmarking): 
-  Sudah terbukti berhasil mempercepat komputasi dari 20.25 detik (CSV) menjadi 
-  6.37 detik (Parquet Cache).
-- Bab 3 (Implementasi 6 Operasi PySpark DataFrame API & Spark SQL):
-  Semua operasi (Filter, Derived Columns Shift, GroupBy Agg, Inner Join, Window 
-  Top 3, dan 2 Query SQL) sudah berjalan.
-  *Catatan penyempurnaan kecil:* Pada sql_query_1 (Shift Patroli), kita cukup 
-  mengubah sumber tabelnya dari "vw_chicago_crimes_joined" menjadi tabel kejahatan 
-  lengkap agar angkanya selaras 100% dengan Visualisasi 3.
-- Bab 4 (EDA & 8 Visualisasi Lengkap dengan Sel Judul & Interpretasi Masing-Masing):
-  - Visualisasi 1: Heatmap 2D Hari vs Jam Kejadian.
-  - Visualisasi 2: Tren Historis Tahunan Volume vs Arrest Rate (Dual-Axis).
-  - Visualisasi 3: Efektivitas Operasional berdasarkan Shift Patroli.
-  - Visualisasi 4: Top 15 Kategori Kejahatan (Theft & Battery dominan).
-  - Visualisasi 5: Scatter Tipologi Kejahatan (Proactive Enforcement vs Reactive).
-  - Visualisasi 6: Top 10 Lokasi Fisik Kejadian (Street & Sidewalk dominan).
-  - Visualisasi 7: Korelasi Hardship Index vs Volume Kejahatan (Paradoks Riverdale).
-  - Visualisasi 8: Komparasi Tingkat Beban Kejahatan per Tier Wilayah Sosio-Ekonomi.
-  Seluruh sel kode dan interpretasi sudah tersusun rapi per visualisasi.
+Rumusan Masalah:
+Jenis kejahatan apa yang paling mendominasi di Kota Chicago dan bagaimana variasi 
+rasio keberhasilan penegakan hukum (arrest rate) antar-kategori kejahatan?
 
+Langkah Eksekusi Analisis:
+1. Profiling Kategori Kejahatan (Primary Type - Klasifikasi FBI UCR):
+   - Menghitung volume total, total penangkapan, dan arrest rate (%) per kategori 
+     kejahatan dengan filter signifikansi statistik (>= 10.000 kasus).
+2. Agregasi Spark SQL & Visualisasi:
+   - Visualisasi 4: Diagram Batang Top Jenis Kejahatan Terbanyak di Chicago.
+   - Visualisasi 5: Scatter Plot Volume Insiden vs. Arrest Rate (%) pada Skala Linear 
+     dengan huruf penanda bebas tumpukan dan legenda terstruktur di bawah grafik.
+3. Parameter Output Hasil:
+   - Kategori kejahatan dominan secara volume absolut (Theft, Battery, Criminal Damage).
+   - Segmentasi klaster efektivitas penegakan hukum berbasis data:
+     * Klaster Proaktif (Operasi penindakan lapangan: Narkotika, Senjata, Prostitusi - laju penangkapan >65%-99%).
+     * Klaster Reaktif Properti (Kejahatan terlaporkan pasca-kejadian: Pencurian, Pembobolan - laju penangkapan <12%).
+     * Klaster Interpersonal (Kejahatan kekerasan fisik: Battery, Assault, Pembunuhan - laju penangkapan 20%-48%).
 
 --------------------------------------------------------------------------------
-3. RENCANA DETAIL BAB 5: PREPROCESSING & PEMERIKSAAN KUALITAS DATA
+Q3: DAMPAK INDIKATOR SOSIO-EKONOMI TERHADAP BEBAN KRIMINALITAS WILAYAH
 --------------------------------------------------------------------------------
-Tujuan: Mengaudit integritas dataset 8,67 juta baris dengan 3 pengujian kualitas data 
-standar Big Data, serta membongkar anomali teknis yang kita temui di Bab 3 & 4.
+Rumusan Masalah:
+Apakah kawasan komunitas dengan tingkat kesulitan ekonomi tinggi (Hardship Index) 
+dan pendapatan per kapita rendah menanggung beban insiden kejahatan per komunitas 
+yang lebih tinggi secara signifikan?
 
-Rencana Implementasi Kode & Analisis:
-1. Data Quality Check 1: Audit Nilai Hilang (Missing Values) & Geocoding Lag
-   - Menghitung persentase NULL/NaN pada seluruh kolom penting (id, date, primary_type, 
-     location_description, latitude, longitude, community_area).
-   - Membuktikan fakta historis: Menunjukkan bahwa NULL pada "community_area" 
-     terkonsentrasi di tahun 2001 (98.68% null) dan 2002 (27.24% null) karena CPD baru 
-     mengadopsi sistem geocoding batas wilayah pada akhir 2002.
-2. Data Quality Check 2: Validasi Geospasial & Koordinat Ekstrim
-   - Memvalidasi rentang koordinat geografis resmi kota Chicago:
-     Latitude [41.60 s.d. 42.05] dan Longitude [-87.95 s.d. -87.50].
-   - Mendeteksi dan memfilter anomali titik koordinat (0.0, 0.0) atau koordinat di luar 
-     teritori Chicago (misal: kesalahan input GPS).
-3. Data Quality Check 3: Integritas Primary Key & Deteksi Duplikasi
-   - Memeriksa apakah ada duplikasi pada kolom unik "crime_id" dan "case_number".
-   - Memverifikasi apakah satu nomor kasus dapat memiliki beberapa baris (misal 1 insiden 
-     dengan 2 korban berbeda atau beberapa jenis pelanggaran sekaligus).
-4. Hasil Preprocessing: 
-   - Menghasilkan DataFrame bersih (Clean Silver/Gold) yang siap untuk analisis tingkat 
-     lanjut dan Machine Learning di Bab 6.
-
-
---------------------------------------------------------------------------------
-4. RENCANA DETAIL BAB 6: ANALISIS LANJUTAN & MACHINE LEARNING
---------------------------------------------------------------------------------
-Tujuan: Menjawab hipotesis Anda mengenai POPULASI, menyelesaikan paradoks Riverdale, 
-menguji penyesuaian scope data, dan membangun model prediktif PySpark MLlib.
-
-Rencana Implementasi:
-1. Pengayaan Data Populasi Resmi Chicago (Population Enrichment):
-   - Menambahkan tabel data populasi penduduk untuk 77 Community Areas kota Chicago 
-     (sumber: US Census Bureau / CMAP Community Data Profiles).
-   - Melakukan Join antara data kejahatan dan data populasi per wilayah komunitas.
-2. Perhitungan Metrik Normalisasi Kriminalitas (Crime Rate per Capita):
-   - Menghitung metrik akademis standar:
-     Crime Rate per 1.000 Penduduk = (Total Kasus / Populasi Wilayah) * 1.000
-3. Pembuktian Ilmiah Paradoks Riverdale vs Austin:
-   - Membuat visualisasi komparasi Sebelum vs Sesudah Normalisasi Populasi:
-     * Sebelum (Data Mentah): Austin tampak sangat tinggi (~492k), Riverdale sangat 
-       rendah (~36k).
-     * Sesudah (Tingkat per 1.000 Warga): Membuktikan bahwa Riverdale sebenarnya 
-       memiliki tingkat kejahatan per kapita yang SANGAT TINGGI (bahkan melampaui 
-       Austin), membuktikan hipotesis Anda 100% benar bahwa angka rendah di Bab 4 
-       hanyalah ilusi karena jumlah warganya sedikit (~7.200 warga).
-4. Fleksibilitas Scope Analisis (Scoping Analysis):
-   - Menyajikan perbandingan transparan:
-     * Opsi Scope A: Seluruh rentang historis (2001 - sekarang).
-     * Opsi Scope B: Rentang waktu yang beririsan langsung dengan data sensus (2008 - 2012).
-     * Opsi Scope C: Era modern pasca-pandemi (2020 - sekarang).
-   - Menjelaskan temuan apa adanya secara fleksibel tanpa memaksakan satu sudut pandang.
-5. Baseline Machine Learning (PySpark MLlib):
-   - Membangun model klasifikasi biner untuk memprediksi probabilitas keberhasilan 
-     penangkapan pelaku (Arrest Prediction: is_arrest = 1 vs 0).
-   - Fitur masukan (Features):
-     * primary_type (kategori kejahatan)
-     * location_description (lokasi fisik: jalan, rumah, toko)
-     * patrol_shift (shift kerja polisi)
-     * is_domestic (apakah konflik keluarga)
-     * hardship_index / tier wilayah
-   - Algoritma: Logistic Regression atau Random Forest Classifier dari pyspark.ml.
-   - Evaluasi Model: Area Under ROC (AUC), Accuracy, dan Feature Importance (melihat faktor 
-     apa yang paling menentukan seorang pelaku berhasil ditangkap atau lolos).
-
+Langkah Eksekusi Analisis:
+1. Normalisasi Demografi & Data Enrichment:
+   - Mengintegrasikan indikator CDPH (Hardship Index, Per Capita Income, Poverty Rate) 
+     dan sensus penduduk resmi (Sensus 2010 CMAP) ke dalam transaksi Silver Layer.
+   - Menghitung laju kejahatan terstandarisasi: (Total Kasus / Populasi) * 1.000.
+2. Agregasi Spark SQL & Visualisasi:
+   - Visualisasi 7: Scatter Plot Hardship Index vs. Laju Kriminalitas per 1.000 Penduduk 
+     dengan garis regresi linear OLS dan pemetaan titik ekstrem empiris.
+   - Visualisasi 8: Komparasi Laju Kriminalitas dan Pendapatan per Kapita per Tier 
+     Sosio-Ekonomi (Low, Medium, High Hardship).
+   - Bab 6.1: Tabel lengkap 77 wilayah komunitas berperingkat laju kriminalitas.
+3. Parameter Output Hasil:
+   - Nilai koefisien korelasi linear (r = 0,61, p < 0,001).
+   - Pemetaan titik-titik ekstrem data aktual:
+     * Puncak Kerawanan Ekonomi & Kriminalitas: Fuller Park (#1 laju 413,0/1k), 
+       West Garfield Park (#2 laju 354,1/1k), Englewood (#5 laju 331,5/1k), Riverdale (Hardship #1 98,0).
+     * Anomali Komersial: The Loop (Hardship 3,0 namun laju 267,4/1k akibat tarikan komuter harian).
+     * Anomali Kohesi Sosial: South Lawndale (Hardship 96,0 namun laju hanya 79,3/1k).
+     * Baseline Hunian Teraman: Edison Park (Hardship 8,0, laju 27,3/1k).
 
 --------------------------------------------------------------------------------
-5. RENCANA DETAIL BAB 7: TEMUAN BERBASIS BUKTI, KETERBATASAN, & REKOMENDASI
+Q4: KONSENTRASI SPASIAL & PEMETAAN WILAYAH KOMUNITAS
 --------------------------------------------------------------------------------
-Tujuan: Menyusun kesimpulan akhir yang elegan, tidak kaku, dan mempertahankan 
-kejujuran ilmiah berdasarkan seluruh temuan yang didapat.
+Rumusan Masalah:
+Bagaimana pemetaan 3 jenis kejahatan paling dominan di setiap kawasan komunitas 
+(Community Area) di Kota Chicago?
 
-Rencana Struktur:
-1. Tiga Temuan Kunci Berbasis Bukti (Key Evidence-Based Findings):
-   - Temuan 1 (Dinamika Temporal): Ritme kejahatan memuncak pada shift sore-malam (Shift 2) 
-     dan akhir pekan, di mana jalanan umum (street) menjadi titik paling rawan.
-   - Temuan 2 (Dekomposisi Penegakan Hukum): Penurunan arrest rate kota dari 29% ke 11% 
-     bukan karena polisi pasif, melainkan karena pergeseran kebijakan de-eskalasi kasus 
-     narkotika (yang arrest ratenya 99%) dan dominasi kejahatan properti massal.
-   - Temuan 3 (Disparitas Sosio-Ekonomi & Resolusi Populasi): Menjelaskan mengapa 
-     wilayah kemiskinan tinggi menanggung beban kejahatan per kapita tertinggi, 
-     sementara kawasan makmur bisnis (Loop) menjadi target kejahatan properti oportunistik.
-2. Dua Keterbatasan Ilmiah Dataset (Transparent Limitations):
-   - Keterbatasan 1: Temporal Lag pada Data Sensus (Data sensus CDPH adalah snapshot 
-     2008-2012, sehingga belum menangkap dinamika gentrifikasi 10 tahun terakhir).
-   - Keterbatasan 2: Ketiadaan Data Geocoding Wilayah Komunitas pada Tahun 2001-2002 
-     (613 ribu baris data awal tidak memiliki atribut community area).
-3. Dua Rekomendasi Kebijakan yang Realistis (Policy Recommendations):
-   - Rekomendasi 1: Alokasi patroli dinamis berbasis jam rawan (penambahan personel di 
-     Shift 2 dan malam akhir pekan pada koridor jalanan komersial).
-   - Rekomendasi 2: Intervensi terfokus pada wilayah tertinggal (pendekatan per kapita, 
-     bukan sekadar volume absolut, untuk mengarahkan bantuan sosial dan program pemuda 
-     di kawasan high-hardship seperti Riverdale dan Englewood).
-
-
---------------------------------------------------------------------------------
-6. RENCANA DELIVERABLES AKHIR PROYEK (LENGKAP SESUAI KETENTUAN TUGAS)
---------------------------------------------------------------------------------
-1. File Jupyter Notebook (midterm_part1_to_3_pyspark.ipynb):
-   - Dapat dieksekusi dari sel 1 hingga akhir tanpa error.
-   - Mengikuti struktur baku 7 Bab.
-2. File Dokumentasi (README.md):
-   - Panduan instalasi Java, Hadoop, Spark, dan cara menjalankan notebook.
-   - Penjelasan struktur direktori data dan output.
-3. Laporan Akademik PDF (6 - 10 Halaman):
-   - Disusun terstruktur dengan format ilmiah (Abstrak, Metodologi Big Data, Hasil EDA, 
-     Kualitas Data, Analisis Lanjutan, dan Rekomendasi).
-4. Slide Presentasi (Maksimal 8 Slide):
-   - Dirancang khusus untuk durasi bicara 7 menit + 5 menit demo/tanya jawab.
-   - Visual, to-the-point, dan berfokus pada visualisasi kunci & temuan utama.
+Langkah Eksekusi Analisis:
+1. Window Analytics PySpark:
+   - Menggunakan fungsi jendela terdistribusi:
+     `ROW_NUMBER() OVER (PARTITION BY community_area ORDER BY count DESC)`
+   - Menyaring peringkat 1, 2, dan 3 jenis kejahatan teratas di masing-masing 77 wilayah.
+2. Analisis Spasial Komunitas & Wilayah Geografis:
+   - Bab 3 (Query DataFrame API): Ekstraksi tabel Top 3 Kejahatan per Community Area.
+   - Bab 6.2: Analisis Invarian Spasial (Kepadatan kejahatan per mil persegi dan 
+     distribusi agregat per 9 Sisi Geografis Kota Chicago).
+   - Visualisasi 6: Top 10 Lokasi Fisik Kejadian (Street, Residence, Sidewalk, Apartment).
+3. Parameter Output Hasil:
+   - Matriks profil kejahatan lokal untuk 77 wilayah komunitas.
+   - Identifikasi variasi tipologi spasial (kejahatan jalanan di South/West Side vs. 
+     kejahatan properti komersial di Central/North Side).
 
 ================================================================================
-KESIMPULAN:
-Arah analisis kita tetap konsisten dan berada di jalur yang benar. 
-Kita tidak perlu mengulang dari awal, melainkan mengeksekusi Bab 5 (Kualitas Data) 
-lalu Bab 6 (Data Populasi & MLlib), di mana semua hipotesis Anda akan terbukti 
-secara ilmiah.
+2. TAHAPAN EKSEKUSI TEKNIS & DELIVERABLES PROYEK
 ================================================================================
 
+Tahap 1: Validasi Integritas Notebook PySpark (midterm_part1_to_3_pyspark.ipynb)
+- Seluruh 77 sel notebook telah tuntas, terverifikasi bebas error sintaks, dan dapat 
+  dieksekusi secara mandiri (self-contained & idempotent).
+- Data ingestion & enrichment berjalan otomatis mengunduh data mentah dan memproses 
+  Parquet Silver Layer (7,96 juta baris bersih, 26 kolom terpadu).
+
+Tahap 2: Pemodelan Machine Learning Terdistribusi (Bab 6.4 - 6 Tahapan Modular Transparan)
+- Arsitektur Terdistribusi Penuh pada ~7,96 Juta Baris Data Bersih (df_crimes_clean).
+- 6 Tahapan Eksekusi Sekuensial & 5 Visualisasi Interaktif Langsung:
+  * Tahap 1: Ekstraksi Data, Caching In-Memory, Pembagian Train-Test (80:20), & Visualisasi 6.4.1 (Distribusi Kelas & Imbalance).
+  * Tahap 2: Pipeline Rekayasa Fitur (StringIndexer, OneHotEncoder, VectorAssembler, StandardScaler).
+  * Tahap 3: Pelatihan Estimator Logistic Regression (L-BFGS, maxIter=35), Pelacakan Epoch, & Visualisasi 6.4.2 (Kurva Konvergensi Loss per Epoch).
+  * Tahap 4: Inferensi Test Set, Evaluasi Metrik (AUC-ROC, PR-AUC, Acc, Prec, Rec, F1), & Visualisasi 6.4.3 (Matriks Konfusi Heatmap & Bar Metrik).
+  * Tahap 5: Analisis Probabilistik & Visualisasi 6.4.4 (Kurva ROC Terdistribusi & Distribusi Probabilitas P(Arrest) KDE Plot).
+  * Tahap 6: Ekstraksi Koefisien Model & Visualisasi 6.4.5 (Feature Importance: Top Faktor Pendorong vs Penghambat Penangkapan).
+  * Interpretasi Akademik Mendalam menghubungkan temuan ML dengan Routine Activity Theory dan diskresi kepolisian.
+
+Tahap 3: Penyusunan Laporan Akademik Resmi (Final Academic PDF Report)
+- Format: Makalah Ilmiah Standar (6 - 10 Halaman).
+- Struktur:
+  1. Pendahuluan & Rumusan 4Q
+  2. Metodologi Medallion Architecture (Bronze -> Silver -> Analytics)
+  3. Hasil & Pembahasan: Menjawab Q1, Q2, Q3, dan Q4 secara berurutan berbasis bukti data
+  4. Pemodelan Prediktif Machine Learning Spark MLlib
+  5. Implikasi Kebijakan, Keterbatasan, & Kesimpulan
+  6. Daftar Pustaka (11 Referensi Terverifikasi)
+
+Tahap 4: Pembuatan Slide Presentasi Eksekutif (Final Slide Deck)
+- Batasan: Maksimal 8 Slide Ringkas & Padat Informasi.
+- Alur Slide:
+  Slide 1: Judul Proyek, Identitas Peneliti, & Arsitektur Big Data
+  Slide 2: Latar Belakang & 4 Pertanyaan Bisnis (4Q)
+  Slide 3: Arsitektur Data Lakehouse (Medallion Pipeline & Benchmark Parquet)
+  Slide 4: Temuan Q1 - Pola Temporal & Beban Shift Patroli
+  Slide 5: Temuan Q2 - Tipologi Kejahatan & Disparitas Arrest Rate
+  Slide 6: Temuan Q3 - Hubungan Hardship Index & Pemetaan Titik Ekstrem
+  Slide 7: Temuan Q4 - Konsentrasi Geospasial & Model Prediksi MLlib
+  Slide 8: Rekomendasi Kebijakan Berbasis Data & Kesimpulan
+================================================================================
