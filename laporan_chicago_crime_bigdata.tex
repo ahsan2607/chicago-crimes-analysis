@@ -1,0 +1,388 @@
+\documentclass[11pt,a4paper]{article}
+
+% ==============================================================================
+% PENGATURAN PAKET & TATA LETAK DOKUMEN
+% ==============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[indonesian]{babel}
+\usepackage{geometry}
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm,
+    footskip=1.2cm
+}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Pengaturan Hyperlink
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=blue!70!black,
+    urlcolor=blue!70!black
+}
+
+% Pengaturan Header & Footer
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\fancyhead[L]{\small\textit{Laporan Proyek Tengah Semester Big Data \& Artificial Intelligence}}
+\fancyhead[R]{\small\textit{Universitas / Program Studi}}
+\fancyfoot[L]{\small\textit{Analisis Big Data Kriminalitas Chicago (2001--2026)}}
+\fancyfoot[R]{\thepage}
+
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0.4em}
+\setlist{nosep}
+
+% ==============================================================================
+% JUDUL & INFORMASI PENULIS
+% ==============================================================================
+\title{
+    \vspace{-1.5cm}
+    \textbf{\Large ANALISIS BIG DATA SPASIAL-TEMPORAL DAN PEMODELAN PREDIKTIF PENANGKAPAN KEJAHATAN KOTA CHICAGO MENGGUNAKAN APACHE SPARK}\\
+    \vspace{0.3cm}
+    \large\textit{End-to-End Distributed Analytics, Socioeconomic Profiling, and Machine Learning Classification on 8.67 Million Crime Records}
+}
+
+\author{
+    \textbf{Ahsan Maulana}\\[0.15cm]
+    \normalsize Program Studi Ilmu Komputer / Sains Data\\
+    \normalsize Mata Kuliah: Big Data and Artificial Intelligence
+}
+
+\date{November 2026}
+
+% ==============================================================================
+% DOKUMEN UTAMA
+% ==============================================================================
+\begin{document}
+
+\maketitle
+\thispagestyle{fancy}
+
+\begin{abstract}
+\noindent
+Kota Chicago menghadapi kompleksitas penanganan kriminalitas perkotaan dengan jutaan insiden tercatat selama lebih dari dua dekade. Analisis konvensional menggunakan spreadsheet atau basis data relasional tunggal mengalami kendala skalabilitas (\textit{scalability bottleneck}) dalam mengolah data berukuran gigabyte. Penelitian ini menyajikan implementasi rekayasa data dan analitik terdistribusi berskala masif secara \textit{end-to-end} menggunakan Apache Spark (PySpark) di atas data mentah 8.671.708 catatan insiden (2001--2026) yang diintegrasikan dengan indikator sosio-ekonomi sensus masyarakat. Mengadopsi arsitektur \textit{Medallion Data Lakehouse}, data mentah (\textit{Bronze Layer}) distandarisasi dan diperkaya (\textit{Silver Layer}) menggunakan format \textit{Apache Parquet} terkompresi \textit{Snappy}, menghasilkan rasio kompresi 90,8\% dan efisiensi pembacaan data 20 kali lebih cepat dibanding CSV mentah. Audit kualitas data 3 pilar pada Bab 5 memisahkan 705.756 baris cacat kualitas geospasial (\textit{geocoding lag} CLEAR 2001--2002) untuk menghasilkan \textit{Clean Gold Layer} (7.965.952 baris murni). Analisis temporal membuktikan konsentrasi beban kerja patroli tertinggi pada Shift 2 (14:00--21:59, 41,5\% insiden) dan malam akhir pekan. Dekonstruksi metrik penangkapan (\textit{Arrest Rate}) mengungkap penurunan historis dari 29\% (2001) ke 11\% (kontemporer) bukan akibat degradasi kinerja, melainkan pergeseran struktural penegakan hukum akibat penurunan operasi narkotika proaktif (>89\%), pembatasan prosedur \textit{stop-and-frisk} pasca-\textit{Federal Consent Decree 2015}, serta dominasi kejahatan properti reaktif. Normalisasi demografi Sensus 2010 membuktikan korelasi kuat antara \textit{Hardship Index} dan laju kriminalitas ($r = 0,61, p < 0,001$) dengan hierarki kerawanan yang persisten lintas dekade hingga Sensus 2020 ($r = 0,885$). Pemodelan \textit{Machine Learning} terdistribusi (\textit{Logistic Regression} L-BFGS, 35 epoch) pada 7,96 juta data bersih berhasil memprediksi status penangkapan (\texttt{is\_arrest}) dengan skor \textit{Area Under ROC} (AUC-ROC) 0,8709 dan akurasi 82,3\%. Analisis koefisien model membuktikan kejahatan proaktif (\textit{Narcotics}, Odds Ratio 3,35x) dan lokasi ritel terawasi (\textit{Grocery Store}, 1,29x) sebagai pendorong penangkapan tertinggi, sementara kejahatan properti reaktif (\textit{Theft}, 0,63x) menjadi penghambat terbesar. Laporan ini merumuskan implikasi metodologis dan tiga rekomendasi kebijakan preventif berbasis bukti.
+\end{abstract}
+
+\noindent\textbf{Kata Kunci:} Big Data Analytics, Apache Spark, PySpark MLlib, Medallion Architecture, Chicago Crime, Logistic Regression, Socioeconomic Profiling, Evidence-Based Policing.
+
+\vspace{0.4cm}
+\hrule
+\vspace{0.4cm}
+
+% ==============================================================================
+% BAB 1: PENDAHULUAN & PERUMUSAN MASALAH
+% ==============================================================================
+\section{Pendahuluan \& Perumusan Masalah}
+
+\subsection{Latar Belakang \& Rumusan Masalah Utama}
+Kriminalitas perkotaan modern merepresentasikan fenomena sosio-spasial yang dinamis dan berdimensi jamak. Kota Chicago, sebagai salah satu kota metropolitan terbesar di Amerika Serikat, menghadapi tantangan historis terkait keamanan publik dengan jutaan laporan kejahatan yang terakumulasi selama lebih dari dua dekade. Pemahaman mendalam mengenai pola kriminalitas tidak dapat lagi dicapai melalui agregasi deskriptif konvensional. Penumpukan data transaksi kepolisian berukuran gigabyte menuntut paradigma komputasi terdistribusi yang mampu memproses, mengaudit, dan memodelkan data secara terpadu tanpa mengalami degradasi memori (\textit{out-of-memory failure}).
+
+Melalui ekosistem Apache Spark (PySpark), penelitian ini mengimplementasikan alur analisis data besar (\textit{Big Data pipeline}) secara mandiri (\textit{self-contained}) dan terdistribusi untuk menjawab rumusan masalah utama:
+\begin{quote}
+\textit{Bagaimana pola temporal, karakteristik spasial, dan indikator kesulitan sosial-ekonomi memengaruhi volume kriminalitas serta efektivitas penegakan hukum (arrest rate) di Kota Chicago guna mendukung perumusan strategi preventif kepolisian yang berbasis data?}
+\end{quote}
+
+\subsection{Pertanyaan Analitis Spesifik (4Q)}
+Untuk menjawab rumusan masalah tersebut secara komprehensif, analisis difokuskan pada empat pertanyaan analitis terstruktur (4Q):
+\begin{enumerate}[label=\textbf{Q\arabic*:}]
+    \item \textbf{Pola Temporal \& Beban Kerja Patroli:} Kapan periode waktu terjadinya lonjakan kejahatan tertinggi (distribusi per jam, hari dalam seminggu, dan shift patroli kepolisian), serta bagaimana disparitas tingkat penangkapan (\textit{arrest rate}) pada masing-masing shift?
+    \item \textbf{Struktur Kategori Kejahatan \& Efektivitas Penegakan:} Jenis kejahatan apa yang paling mendominasi di Kota Chicago dan bagaimana variasi rasio keberhasilan penegakan hukum (\textit{arrest rate}) antar-kategori kejahatan?
+    \item \textbf{Dampak Indikator Sosio-Ekonomi Wilayah:} Apakah kawasan komunitas dengan tingkat kesulitan ekonomi tinggi (\textit{Hardship Index}) dan pendapatan per kapita rendah menanggung beban insiden kejahatan per komunitas yang lebih tinggi secara signifikan?
+    \item \textbf{Konsentrasi Spasial Wilayah \& Pemodelan Prediktif MLlib:} Bagaimana karakteristik konsentrasi spasial kejahatan pada 77 kawasan komunitas Kota Chicago, dan sejauh mana keberhasilan penegakan hukum (*is\_arrest\textit{) dapat diprediksi menggunakan pipeline klasifikasi terdistribusi (}PySpark MLlib*) berbasis atribut temporal, spasial, dan sosio-ekonomi?
+\end{enumerate}
+
+% ==============================================================================
+% BAB 2: KARAKTERISTIK 5V & ARSITEKTUR LAKEHOUSE
+% ==============================================================================
+\section{Karakteristik 5V Big Data \& Arsitektur Penyimpanan}
+
+\subsection{Analisis Lima Dimensi Big Data}
+Dataset insiden kejahatan Kota Chicago merefleksikan lima karakteristik fundamental Big Data \cite{zaharia2012}:
+\begin{itemize}
+    \item \textbf{Volume:} Skala data mentah berukuran 1,96 GB yang mencakup 8.671.708 baris transaksi dan 22 atribut, melampaui batas efisiensi komputasi \textit{in-memory} pustaka pemrosesan data berbasis \textit{single-node} seperti Pandas.
+    \item \textbf{Velocity:} Aliran pembaruan data secara kontinu dari sistem pelaporan terpadu kepolisian Chicago (\textit{Citizen Law Enforcement Analysis and Reporting} / CLEAR) yang mencatat ratusan insiden baru setiap hari.
+    \item \textbf{Variety:} Heterogenitas format data yang menggabungkan rekaman transaksional temporal, koordinat titik GPS, batas poligon spasial 77 \textit{Community Areas}, serta indikator demografi dan sensus sosio-ekonomi CDPH.
+    \item \textbf{Veracity:} Keberadaan anomali data nyata, mencakup 613.719 data hilang (\textit{missing values}) pada kode wilayah komunitas akibat jeda digitalisasi awal dekade 2000-an, titik koordinat di luar wilayah administratif Chicago, serta 632 kasus pencatatan nomor kasus ganda (\textit{multi-charge}).
+    \item \textbf{Value:} Kemampuan ekstraksi wawasan analitis prediktif yang melandasi perumusan strategi penugasan patroli presisi (\textit{precision policing}), deteksi titik rawan kejahatan (\textit{crime hotspots}), dan intervensi kebijakan sosial lintas sektoral.
+\end{itemize}
+
+\subsection{Desain Arsitektur Multi-Layer (Medallion Lakehouse)}
+Arsitektur penyimpanan dirancang mengadopsi prinsip \textit{Medallion Data Lakehouse} untuk menjamin keterlacakan garis keturunan data (\textit{data lineage}) dan efisiensi komputasi terdistribusi:
+\begin{enumerate}
+    \item \textbf{Bronze Layer (Raw Storage):} Seluruh data mentah hasil akuisisi dari portal data terbuka Kota Chicago (format CSV berukuran 1,96 GB) disimpan pada direktori lokal \texttt{data/} tanpa modifikasi destruktif untuk mempertahankan bukti audit primer.
+    \item \textbf{Silver Layer (Conformed, Standardized, \& Enriched):} Data mentah distandarisasi penamaannya, diekstraksi fitur dimensinya (jam, hari, shift kerja, indikator akhir pekan), serta \textbf{diperkaya (\textit{Data Enrichment})} melalui operasi \textit{Broadcast Left Join} dengan tabel master dimensi 77 komunitas Chicago. Seluruh 8.671.708 baris transaksi dipertahankan dan dimaterialisasikan ke dalam berkas \textit{Apache Parquet} terkompresi \textit{Snappy} (\texttt{data/crimes\_silver.parquet}).
+    \item \textbf{Clean Gold Layer (Audited \& Refined):} Dataset hasil penyaringan ketat 3 pilar kualitas data pada Bab 5, menghasilkan 7.965.952 baris data bersih (\texttt{df\_crimes\_clean}) yang bebas anomali GPS dan bebas nilai kosong wilayah komunitas, berfungsi sebagai bahan bakar komputasi analitik lanjut dan pelatihan \textit{Machine Learning}.
+\end{enumerate}
+
+\subsection{Benchmarking Efisiensi Format Columnar Parquet}
+Pengujian komputasi membuktikan keunggulan arsitektur berbasis kolom (\textit{columnar storage}) Apache Parquet dibanding format baris tradisional (CSV mentah) sebagaimana dirangkum pada Tabel~\ref{tab:benchmark}.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Evaluasi Kinerja Penyimpanan \& Pembacaan Data: Raw CSV vs. Silver Parquet}
+\label{tab:benchmark}
+\begin{tabularx}{\textwidth}{lXXX}
+\toprule
+\textbf{Metrik Evaluasi} & \textbf{Raw CSV Mentah} & \textbf{Silver Parquet (Enriched)} & \textbf{Tingkat Peningkatan Efisiensi} \\
+\midrule
+Ukuran Berkas di Disk & 1.955,2 MB (~1,96 GB) & 180,4 MB & \textbf{Reduksi Ukuran 90,8\%} (Kompresi 10,8x) \\
+Jumlah Baris & 8.671.708 baris & 8.671.708 baris & 100\% Data Utuh Terpreservasi \\
+Jumlah Kolom & 22 atribut mentah & 26 atribut terpadu & +4 Dimensi Fitur Tambahan \\
+Durasi Eksekusi Kueri Scan & 24,82 detik & 1,18 detik & \textbf{Akselerasi Kecepatan 21,0x Lebih Cepat} \\
+Mekanisme Optimasi & Baris sekuensial penuh & *Column Projection \& Pushdown* & Eliminasi I/O disk non-relevan \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ==============================================================================
+% BAB 3: PEMROSESAN DATA TERDISTRIBUSI
+% ==============================================================================
+\section{Pemrosesan Data Terdistribusi (PySpark DataFrame \& SQL)}
+
+Pemrosesan data mengimplementasikan aljabar relasional PySpark DataFrame API dan antarmuka Spark SQL deklaratif:
+\begin{enumerate}
+    \item \textbf{Seleksi \& Proyeksi Kolom (\texttt{select}):} Membatasi pembacaan atribut memori hanya pada variabel kunci analisis guna meminimalkan jejak memori JVM.
+    \item \textbf{Penyaringan Presisi (\texttt{filter}):} Mengekstraksi subset transaksi risiko tinggi (misal kejahatan kekerasan dengan keterlibatan penangkapan).
+    \item \textbf{Agregasi Terdistribusi (\texttt{groupBy} \& \texttt{agg}):} Menghitung ringkasan volume insiden, laju penangkapan, dan frekuensi kasus lintas kategori secara paralel di seluruh partisi klaster.
+    \item \textbf{Pengurutan Global (\texttt{orderBy}):} Menyusun hierarki peringkat beban kejahatan wilayah menggunakan partisi terurut.
+    \item \textbf{Rekayasa Atribut Turunan (\texttt{withColumn}):} Memetakan komponen waktu ke dalam tiga shift patroli resmi kepolisian Chicago (\textit{Three-Watch System}) serta penanda akhir pekan.
+    \item \textbf{Penggabungan Tabel Dimensi (\texttt{join} dengan \texttt{F.broadcast}):} Menggabungkan tabel transaksi besar (8,67 juta baris) dengan tabel master referensi 77 komunitas tanpa memicu \textit{shuffle exchange} berbiaya tinggi pada jaringan antarnode.
+\end{enumerate}
+
+% ==============================================================================
+% BAB 4: EXPLORATORY DATA ANALYSIS & PEMBUKTIAN 4Q
+% ==============================================================================
+\section{Exploratory Data Analysis \& Evaluasi Empiris (Q1--Q3)}
+
+\subsection{Jawaban Q1: Pola Temporal \& Dinamika Tiga Shift Patroli}
+Analisis heatmap dua dimensi (Jam vs. Hari) membuktikan eksistensi pola temporal sirkadian yang konsisten dengan teori aktivitas rutin perkotaan \cite{towers2018, stec2018}. Konsentrasi kejahatan tertinggi terkonsentrasi pada rentang malam hari (pukul 20:00 hingga 00:00) dan mencapai intensitas puncak pada malam akhir pekan (Jumat dan Sabtu). Sebaliknya, tingkat kejahatan terendah tercatat secara konsisten pada dini hari menjelang fajar (pukul 05:00 hingga 08:00).
+
+\begin{table}[h]
+\centering
+\small
+\caption{Distribusi Beban Kerja \& Efektivitas Penangkapan Berdasarkan Shift Patroli Kepolisian}
+\label{tab:shift}
+\begin{tabularx}{\textwidth}{lccccX}
+\toprule
+\textbf{Shift Patroli} & \textbf{Rentang Waktu} & \textbf{Total Kasus} & \textbf{Proporsi (\%)} & \textbf{Arrest Rate (\%)} & \textbf{Karakteristik Operasional} \\
+\midrule
+Shift 1 (Day Watch) & 06:00 -- 13:59 & 2.684.120 & 31,0\% & 22,4\% & Aktivitas komersial, sekolah, dan perkantoran. \\
+Shift 2 (Evening Watch) & 14:00 -- 21:59 & 3.599.141 & 41,5\% & 28,3\% & Jam pulang kerja, transit ritel, dan interaksi publik. \\
+Shift 3 (Night Watch) & 22:00 -- 05:59 & 2.388.447 & 27,5\% & 27,7\% & Kejahatan jalanan nokturnal \& patroli intervensi. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Berdasarkan Tabel~\ref{tab:shift}, beban kerja operasional kepolisian terkonsentrasi secara mutlak pada Shift 2 (mencakup 41,5\% dari seluruh kejahatan kota). Menariknya, tingkat penangkapan (\textit{Arrest Rate}) pada Shift 2 (28,3\%) dan Shift 3 (27,7\%) secara signifikan melampaui Shift 1 (22,4\%), mencerminkan intensitas patroli proaktif petugas terhadap tindak pidana jalanan pada malam hari \cite{towers2018}.
+
+\subsection{Jawaban Q2: Struktur Kategori Kejahatan, Dekonstruksi Arrest Rate \& Clearance Rate}
+Analisis tren historis (Visualisasi 2) memperlihatkan penurunan volume kejahatan tahunan dari ~486.000 kasus (2001) menjadi ~238.000--260.000 kasus pada era kontemporer. Di saat yang sama, tingkat penangkapan agregat (\textit{Arrest Rate}) menurun drastis dari 29,1\% menjadi ~11,2\%. Pemahaman ilmiah atas data ini membutuhkan pembedaan metodologis yang tegas antara \textit{Arrest Rate} dan \textit{Clearance Rate}:
+
+\begin{enumerate}
+    \item \textbf{Distinksi Metodologis (\textit{Arrest Rate} vs. \textit{Clearance Rate}):}
+    \begin{itemize}
+        \item \textbf{Arrest Rate (Tingkat Penangkapan Langsung):} Atribut boolean \texttt{arrest} pada portal data CPD mencatat status penangkapan fisik langsung di tempat (\textit{custodial arrest}) pada saat laporan insiden diproses di lapangan.
+        \item \textbf{Clearance Rate (Tingkat Pengungkapan Perkara FBI UCR):} Standar \textit{Uniform Crime Reporting} (UCR) FBI mendefinisikan kasus ``terungkap'' (\textit{cleared}) melalui dua mekanisme: (1) \textit{Cleared by Arrest} (tersangka ditangkap, didakwa, dan dilimpahkan ke pengadilan oleh divisi detektif—dapat terjadi berbulan-bulan pasca-kejadian), atau (2) \textit{Cleared by Exceptional Means} (identitas dan lokasi pelaku diketahui dengan bukti cukup, namun penangkapan fisik terhalang faktor luar, seperti pelaku tewas, bunuh diri, atau korban menolak bersaksi).
+    \end{itemize}
+
+    \item \textbf{Konfirmasi Realitas Empiris Kelemahan Penegakan Hukum Kota Chicago \cite{main2022, ipi2022, doj2017}:}
+    Kajian literatur ilmiah, analisis pemantau kebijakan independen \cite{ipi2022}, serta investigasi jurnalistik pemenang Hadiah Pulitzer \textit{Chicago Sun-Times} \cite{main2022} membuktikan bahwa \textbf{kinerja penegakan hukum dan efektivitas penyelidikan di Chicago memang tergolong paling rendah di antara kota-kota metropolitan Amerika Serikat}. Polisi hanya berhasil melakukan penangkapan pada ~11\%--12\% dari seluruh kejahatan yang dilaporkan, dengan tingkat penyelesaian perkara yang terpuruk:
+    Kajian literatur ilmiah dan dokumen investigasi resmi federal \cite{doj2017, skogan2016} membuktikan bahwa \textbf{kinerja penegakan hukum dan efektivitas penyelidikan di Chicago memang tergolong paling rendah di antara kota-kota metropolitan Amerika Serikat}. Polisi hanya berhasil melakukan penangkapan pada ~11\%--12\% dari seluruh kejahatan yang dilaporkan, dengan tingkat penyelesaian perkara yang terpuruk:
+    Kajian literatur ilmiah serta investigasi resmi pemerintah federal \cite{doj2017, skogan2016} membuktikan bahwa \textbf{kinerja penegakan hukum dan efektivitas penyelidikan di Chicago memang tergolong paling rendah di antara kota-kota metropolitan Amerika Serikat}. Polisi hanya berhasil melakukan penangkapan pada ~12\% dari seluruh kejahatan yang dilaporkan, dengan tingkat penyelesaian perkara yang terpuruk:
+    Kajian literatur ilmiah dan dokumen investigasi resmi membuktikan bahwa \textbf{baik tingkat penangkapan (\textit{Arrest Rate}) maupun pengungkapan perkara (\textit{Clearance Rate}) di Chicago memang tergolong paling rendah di antara kota-kota metropolitan Amerika Serikat}:
+    \begin{itemize}
+        \item \textbf{Kasus Pembunuhan (\textit{Homicide}):} Investigasi resmi \textit{United States Department of Justice} \cite{doj2017} mendokumentasikan bahwa \textit{clearance rate} pembunuhan di Chicago sempat merosot hingga \textbf{29\% pada tahun 2016}, kurang dari separuh rata-rata nasional AS (~60\%). Kajian kriminologi independen juga mengungkap bahwa angka pengungkapan pembunuhan di tahun-tahun tertentu banyak ditopang oleh penutupan berkas luar biasa (\textit{exceptional clearance}), sementara penangkapan fisik riil oleh detektif berkisar rendah pada 30\%--35\%.
+        \item \textbf{Penembakan Non-Fatal (\textit{Non-Fatal Shootings}):} Laju pengungkapan perkara penembakan non-fatal di Chicago tercatat di bawah \textbf{5\%--8\%}, mengindikasikan lebih dari 92\% pelaku penembakan jalanan tidak pernah teridentifikasi atau ditangkap.
+        \item \textbf{Kejahatan Properti (\textit{Property Crime}):} Tingkat penyelesaian perkara pencurian dan pembobolan secara konsisten berada di bawah \textbf{3\%--5\%}, selaras dengan \textit{Arrest Rate} pada dataset ini yang berkisar antara 5,6\% hingga 10,5\%.
+    \end{itemize}
+
+    \item \textbf{Empat Faktor Determinan Struktural \cite{doj2017, skogan2016}:}
+    \begin{itemize}
+        \item \textbf{Defisit Personel Reserse/Detektif:} Laporan DOJ \cite{doj2017} mencatat porsi personel detektif di CPD hanya mencakup ~8\% dari total aparat (dibandingkan 15\%--20\% di LAPD atau NYPD), memicu beban kerja investigasi yang jauh melampaui standar kapasitas optimal.
+        \item \textbf{Erosi Kepercayaan Publik \& Keengganan Saksi:} Warisan penghentian dan penggeledahan massal (\textit{stop-and-frisk}) yang tidak proporsional memicu krisis legitimasi kepolisian \cite{skogan2016}. Ancaman intimidasi kelompok bersenjata serta ketiadaan perlindungan saksi menyebabkan warga enggan memberikan kesaksian kunci yang disyaratkan jaksa untuk menetapkan dakwaan \cite{doj2017}.
+        \item \textbf{Penurunan Operasi Narkotika Proaktif (>89\%):} Kasus narkotika jalanan (berrasio penangkapan 99,3\%) anjlok dari >50.000 kasus/tahun pada 2001--2005 menjadi <5.000 kasus pasca-depenalisasi Illinois. Hilangnya kasus tangkap tangan ini secara matematis menghentikan penggelembungan semu (\textit{artificial inflation}) angka penangkapan seluruh kota.
+        \item \textbf{Pergeseran ke Doktrin Reaktif \& Kejahatan Cepat:} Pengawasan pengadilan federal (\textit{Federal Consent Decree}) menghentikan razia preemptif sewenang-wenang \cite{skogan2016}, menggeser aparat pada respon panggilan darurat 911 saat pelaku kejahatan properti atau penembakan lintas kendaraan telah meninggalkan tempat kejadian perkara.
+    \end{itemize}
+\end{enumerate}
+
+Evaluasi sebaran kejahatan (Visualisasi 5) mengonfirmasi polarisasi tegas menjadi tiga klaster penegakan hukum:
+\begin{itemize}
+    \item \textbf{Klaster Proaktif (Arrest Rate >65\%--99\%):} \textit{Narcotics} (99,3\%), \textit{Prostitution} (99,5\%), \textit{Liquor Law Violation} (98,9\%), \textit{Gambling} (99,3\%), \textit{Weapons Violation} (72,5\%), dan \textit{Criminal Trespass} (66,2\%). Kejahatan ini dicatat berbarengan dengan operasi tangkap tangan atau razia lapangan.
+    \item \textbf{Klaster Reaktif Properti (Arrest Rate <12\%):} \textit{Theft} (10,5\%), \textit{Motor Vehicle Theft} (7,0\%), \textit{Criminal Damage} (6,3\%), dan \textit{Burglary} (5,6\%). Minimnya penangkapan di tempat mencerminkan rendahnya \textit{clearance rate} kejahatan properti perkotaan (<5\%).
+    \item \textbf{Klaster Interpersonal (Arrest Rate 20\%--48\%):} \textit{Battery} (21,6\%), \textit{Assault} (19,8\%), dan \textit{Homicide} (48,1\%) berkat kehadiran saksi korban dan prioritas penugasan divisi detektif.
+
+\subsection{Jawaban Q3: Dampak Indikator Sosio-Ekonomi Wilayah \& Titik Ekstrem}
+Korelasi linear Pearson antara tingkat kesulitan sosio-ekonomi (\textit{Hardship Index}) dan laju kejahatan per 1.000 penduduk Sensus 2010 tercatat signifikan secara positif ($r = 0,61, p < 0,001$). Namun, pemetaan titik-titik ekstrem data empiris mengungkap variasi ekologi perkotaan yang kompleks \cite{campedelli2020}:
+\begin{enumerate}
+    \item \textbf{Puncak Kerentanan Sosio-Ekonomi:} Fuller Park (Hardship 97,0) mencatatkan \textbf{laju kejahatan tertinggi di seluruh Chicago} sebesar \textbf{413,0 per 1.000 penduduk}, disusul West Garfield Park (Hardship 92,0; laju 354,1/1k) dan Englewood (Hardship 94,0; laju 331,5/1k). Kawasan Riverdale dengan Hardship Index tertinggi di Chicago (98,0) mencatatkan laju kejahatan 215,2 per 1.000 penduduk (kuantil 25\% teratas kota).
+    \item \textbf{Titik Anomali Komersial (The Loop, ID 32):} Memiliki Hardship Index sangat rendah (3,0 / kawasan perkantoran mewah), namun mencatatkan laju kejahatan tinggi sebesar \textbf{267,4 per 1.000 penduduk} (peringkat ke-10 kota). Hal ini disebabkan oleh tarikan ratusan ribu komuter dan wisatawan harian yang menjadi sasaran pencurian ritel, sementara penyebut sensus hanya menghitung 29 ribu warga residensial malam hari \cite{campedelli2020}.
+    \item \textbf{Titik Anomali Kohesi Sosial (South Lawndale / Little Village, ID 30):} Memiliki Hardship Index sangat tinggi (96,0, termiskin ke-3 di Chicago), namun laju kejahatannya tercatat rendah, yaitu \textbf{79,3 per 1.000 penduduk} (peringkat ke-56 dari 77 wilayah). Hal ini membuktikan eksistensi faktor protektif berupa kontrol sosial informal dan kekuatan jaringan komunitas mikro (\textit{Collective Efficacy}) yang mampu meredam kriminalitas jalanan \cite{campedelli2020}.
+    \item \textbf{Baseline Kawasan Teraman (Edison Park, ID 09):} Hardship Index 8,0 dengan laju kriminalitas terendah kota sebesar \textbf{27,3 per 1.000 penduduk} (peringkat \#77).
+\end{enumerate}
+
+% ==============================================================================
+% BAB 5: DATA QUALITY CHECKS & REFINERY PIPELINE
+% ==============================================================================
+\section{Pemeriksaan Kualitas Data \& Pipeline Preprocessing}
+
+Sebelum mengalirkan data ke algoritma analitik lanjut dan \textit{Machine Learning}, dilakukan audit integritas teknis terhadap 8.671.708 baris data mentah:
+\begin{enumerate}
+    \item \textbf{Pemeriksaan Kelengkapan (Missing Values) \& CLEAR Geocoding Lag:} Ditemukan integritas 100\% pada atribut kunci transaksional (\texttt{crime\_id}, \texttt{primary\_type}, \texttt{is\_arrest}, \texttt{date}). Namun, ditemukan 613.719 nilai kosong (\textit{null}) pada atribut \texttt{community\_area} yang terpusat secara masif pada tahun \textbf{2001 (51,4\% NULL)} dan \textbf{2002 (76,0\% NULL)}. Hal ini disebabkan sistem pelaporan digital terintegrasi CLEAR baru diluncurkan pada akhir 2002 \cite{skogan2016}. Seluruh data dipertahankan untuk analisis temporal makro, namun disaring ketat (\texttt{WHERE community\_area BETWEEN 1 AND 77}) untuk analisis spasial per kapita.
+    \item \textbf{Validasi Batas Geografis Chicago (Bounding Box):} Mengacu pada batas resmi GIS Pemerintah Kota Chicago, koordinat divalidasi pada rentang Latitude $[41.60, 42.05]$ dan Longitude $[-87.95, -87.50]$. Sebanyak 89.261 baris data koordinat kosong atau di luar batas kota berhasil diidentifikasi dan disaring keluar.
+    \item \textbf{Audit Integritas Kunci Primer (Primary Key Uniqueness):} Sebanyak 8.671.708 baris memiliki nilai \texttt{crime\_id} unik (0 duplikasi). Analisis terhadap 632 nomor kasus ganda (\texttt{case\_number}) membuktikan bahwa duplikasi tersebut sah merepresentasikan insiden multi-dakwaan (\textit{multi-charge incident}) dalam satu nomor laporan polisi.
+\end{enumerate}
+Pipeline penyulingan data (\textit{Data Refinery Pipeline}) menghasilkan \textbf{Clean Gold Layer (\texttt{df\_crimes\_clean})} sebanyak \textbf{7.965.952 baris data murni}, siap digunakan untuk pemodelan prediktif terdistribusi.
+
+% ==============================================================================
+% BAB 6: ANALISIS SPASIAL LANJUT & MACHINE LEARNING
+% ==============================================================================
+\section{Analisis Lanjutan Spasial-Demografi \& Pemodelan MLlib}
+
+\subsection{Kepadatan Spasial per Mil Persegi \& Kestabilan Longitudinal}
+Analisis kepadatan kejahatan terhadap luas fisik daratan (\textit{land area}) membuktikan bahwa The Loop dan Near North Side memiliki kepadatan kejahatan spasial tertinggi di Chicago (>250.000 kasus per mil persegi). Sementara itu, secara regional kawasan \textit{South Side} dan \textit{West Side} secara kumulatif menanggung lebih dari 50\% dari total seluruh kejahatan di Chicago \cite{campedelli2020}.
+
+Validasi longitudinal antara laju kejahatan Sensus 2010 dan era modern Sensus 2020 (2020--2024) menghasilkan koefisien korelasi Spearman sebesar \textbf{$r = 0,885$ ($p < 0,001$)}. Nilai korelasi yang mendekati 0,90 ini membuktikan bahwa hierarki spasial kerentanan kejahatan di Kota Chicago memiliki kestabilan jalur (\textit{path dependency}) struktural yang sangat kokoh lintas dekade \cite{campedelli2020}.
+
+\subsection{Arsitektur Pemodelan Machine Learning Terdistribusi (PySpark MLlib)}
+Untuk menjawab efektivitas penegakan hukum secara prediktif, dibangun pipeline klasifikasi biner terdistribusi (\textit{Logistic Regression}) menggunakan \texttt{pyspark.ml} pada seluruh 7.965.952 baris data bersih \cite{djon2023, dakalbab2023, stec2018}:
+\begin{enumerate}
+    \item \textbf{Partisi Data Terdistribusi:} Pembagian 80\% Data Latih (6.372.484 baris) dan 20\% Data Uji (1.593.468 baris) dengan \textit{caching in-memory}. Rasio ketimpangan kelas target (\texttt{is\_arrest}) tercatat 27,3\% kasus tertangkap vs. 72,7\% kasus tanpa penangkapan.
+    \item \textbf{Pipeline Rekayasa Fitur:} 4 fitur kategorikal (\texttt{primary\_type}, \texttt{location\_description}, \texttt{patrol\_shift}, \texttt{geographic\_side}) diproses melalui \texttt{StringIndexer} dan \texttt{OneHotEncoder(dropLast=True)}. Variabel sosio-ekonomi dan temporal (\texttt{is\_domestic}, \texttt{is\_weekend}, \texttt{hardship\_index}, \texttt{per\_capita\_income}) digabungkan melalui \texttt{VectorAssembler} dan distandarisasi menggunakan \texttt{StandardScaler(withStd=True)}. Menghasilkan 263 dimensi fitur terstandarisasi.
+    \item \textbf{Estimator Logistic Regression \& Pelacakan Epoch:} Menggunakan pengoptimal quasi-Newton terdistribusi L-BFGS dengan regularisasi L2 ($regParam = 0,01$) dan batas maksimum 35 epoch. Setiap epoch mengevaluasi gradien fungsi kerugian di seluruh partisi klaster Spark:
+    \begin{equation}
+        \min_{\mathbf{w}} \frac{1}{N} \sum_{i=1}^{N} \log\left(1 + e^{-y_i \mathbf{w}^T \mathbf{x}_i}\right) + \frac{\lambda}{2} \|\mathbf{w}\|_2^2
+    \end{equation}
+    Model mencapai konvergensi stabil pada \textbf{Epoch ke-23}, dengan penurunan nilai fungsi objektif (\textit{loss}) dari 0,55831 (Epoch 0) menjadi 0,38124 (Epoch 23).
+\end{enumerate}
+
+\subsection{Evaluasi Diagnostik Kinerja Model pada Data Uji}
+Evaluasi model pada 1,59 juta data pengujian independen menunjukkan daya diskriminasi yang sangat kuat sebagaimana dirangkum pada Tabel~\ref{tab:ml_eval}.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Metrik Evaluasi Diagnostik Model Klasifikasi Terdistribusi PySpark MLlib pada Data Uji}
+\label{tab:ml_eval}
+\begin{tabularx}{\textwidth}{lXcc}
+\toprule
+\textbf{Metrik Evaluasi} & \textbf{Definisi \& Formula} & \textbf{Skor Model} & \textbf{Kategori Performa} \\
+\midrule
+Area Under ROC (AUC-ROC) & Luas kurva sensitivitas vs. (1 - spesifisitas) & \textbf{0,8709} & Kemampuan diskriminasi sangat kuat \\
+Area Under PR (PR-AUC) & Luas kurva presisi terhadap sensitivitas minoritas & 0,7142 & Ketahanan pada ketimpangan kelas \\
+Overall Accuracy & Rasio prediksi benar terhadap total sampel & \textbf{82,34\%} & Klasifikasi global akurat \\
+Weighted Precision & Ketepatan prediksi berbobot proporsi kelas & 81,70\% & Laju \textit{False Positive} rendah \\
+Weighted Recall & Sensitivitas deteksi berbobot proporsi kelas & 82,34\% & Mayoritas kasus tertangkap terdeteksi \\
+Weighted F1-Score & Rata-rata harmonik presisi dan recall & 0,8125 & Keseimbangan metrik optimal \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Matriks konfusi pada data uji menghasilkan rincian: $TN = 1.078.241$ (67,7\%), $TP = 233.912$ (14,7\%), $FP = 82.115$ (5,2\%), dan $FN = 199.200$ (12,5\%). Kurva ROC melengkung curam mendekati sudut kiri atas, sementara kurva estimasi densitas probabilitas (KDE) memperlihatkan pemisahan bimodal yang tegas antara kasus aktual tertangkap ($P \approx 0,85$) dan kasus lolos ($P \approx 0,15$).
+
+\subsection{Determinan Fitur Penangkapan (\textit{Feature Importance})}
+Ekstraksi koefisien regresi logistik terstandarisasi mengungkap faktor penentu keberhasilan penangkapan sebagaimana dirinci pada Tabel~\ref{tab:coefficients}.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Top 5 Faktor Pendorong \& Penghambat Penangkapan Pelaku Berdasarkan Koefisien Model}
+\label{tab:coefficients}
+\begin{tabularx}{\textwidth}{lXccX}
+\toprule
+\textbf{Kategori Prediktor} & \textbf{Nama Fitur Asli} & \textbf{Koefisien} & \textbf{Odds Ratio} & \textbf{Interpretasi Kriminologis} \\
+\midrule
+\multirow{5}{*}{\textbf{Pendorong Penangkapan}} 
+ & Tindak Pidana: \textit{Narcotics} & +1,2077 & \textbf{3,35x} & Penegakan proaktif; tangkap tangan di TKP. \\
+ & Tindak Pidana: \textit{Prostitution} & +0,3817 & 1,46x & Operasi razia penyamaran kepolisian. \\
+ & Tindak Pidana: \textit{Criminal Trespass} & +0,2919 & 1,34x & Pelaku tertangkap basah di batas properti. \\
+ & Tindak Pidana: \textit{Weapons Violation} & +0,2751 & 1,32x & Penyitaan senjata langsung saat penggeledahan. \\
+ & Lokasi: \textit{Grocery Food Store} & +0,2578 & 1,29x & Pengawasan CCTV \& satpam menahan pelaku di TKP. \\
+\midrule
+\multirow{5}{*}{\textbf{Penghambat Penangkapan}} 
+ & Tindak Pidana: \textit{Theft} & -0,4598 & \textbf{0,63x} & Pelaporan reaktif; pelaku telah kabur dari TKP. \\
+ & Tindak Pidana: \textit{Criminal Damage} & -0,3602 & 0,70x & Vandalisme tanpa saksi mata langsung. \\
+ & Tindak Pidana: \textit{Burglary} & -0,2385 & 0,79x & Pembobolan saat bangunan kosong. \\
+ & Tindak Pidana: \textit{Motor Vehicle Theft} & -0,2315 & 0,79x & Kendaraan dibawa kabur secara cepat. \\
+ & Tindak Pidana: \textit{Robbery} & -0,1996 & 0,82x & Perampokan jalanan dengan pelarian seketika. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ==============================================================================
+% BAB 7: TEMUAN, KETERBATASAN, & REKOMENDASI KEBIJAKAN
+% ==============================================================================
+\section{Temuan Berbasis Bukti, Keterbatasan, \& Rekomendasi Kebijakan}
+
+\subsection{Tiga Temuan Kunci Berbasis Bukti (Key Findings)}
+\begin{enumerate}
+    \item \textbf{Dinamika Sirkadian \& Dominasi Jalur Sirkulasi Publik:} Kejahatan memuncak secara masif pada Shift 2 (14:00--21:59, 41,5\% insiden) dan malam akhir pekan. Lebih dari sepertiga total kriminalitas (~2,85 juta kasus) terkonsentrasi di jalan umum (\textit{Street}) dan trotoar (\textit{Sidewalk}), membuktikan kerentanan ruang publik terbuka yang minim pengawasan alami saat malam hari.
+    \item \textbf{Dekonstruksi Struktural Penurunan Arrest Rate:} Penurunan rasio penangkapan dari 29\% menjadi 11\% bukan mencerminkan degradasi dedikasi kepolisian, melainkan hasil pergeseran kebijakan: penurunan razia narkotika bertingkat tangkap tinggi (>89\%), pembatasan prosedur penggeledahan preemptif jalanan pasca-\textit{Consent Decree 2015} \cite{doj2017, skogan2016}, serta dominasi kejahatan properti reaktif (\textit{Theft}).
+    \item \textbf{Keteguhan Hierarki Spasial \& Efek Penyebut Demografi:} Analisis membuktikan pentingnya normalisasi demografi. Kawasan terpadat (seperti Austin) mendominasi volume panggilan operasional, namun risiko viktimisasi per kapita tertinggi terkonsentrasi di wilayah \textit{High Hardship} (Fuller Park \#1 laju: 413,0/1k). Struktur disparitas ini terbukti stabil secara longitudinal lintas dekade ($r = 0,885$) \cite{campedelli2020}.
+\end{enumerate}
+
+\subsection{Tiga Keterbatasan Metodologis Penelitian (Research Limitations)}
+\begin{enumerate}
+    \item \textbf{Jeda Waktu Data Sensus Sosio-Ekonomi (\textit{Temporal Census Lag}):} Penggunaan indikator sosio-ekonomi ACS CDPH (2008--2012) mencerminkan disparitas struktural jangka panjang, namun belum sepenuhnya menangkap pergeseran demografi mikro pasca-pandemi dan dinamika gentrifikasi lingkungan tertentu.
+    \item \textbf{Jeda Geocoding Digital Fase Awal (2001--2002):} Ketiadaan atribut kode wilayah komunitas pada 613.719 catatan (51\%--76\% NULL) akibat keterlambatan peluncuran sistem CLEAR mengharuskan analisis spasial per kapita difokuskan pada data yang telah tergeoreferensi penuh.
+    \item \textbf{Fenomena Angka Gelap Kejahatan (\textit{Dark Figure of Crime}):} Basis data kepolisian hanya mencatat peristiwa kejahatan yang terlaporkan kepada petugas (\textit{reported crime}). Kejahatan domestik ringan, kekerasan terselubung, dan penipuan mikro yang tidak dilaporkan masyarakat tetap berada di luar jangkauan pencatatan resmi kepolisian.
+\end{enumerate}
+
+\subsection{Tiga Rekomendasi Kebijakan Berbasis Data (Policy Recommendations)}
+\begin{enumerate}
+    \item \textbf{Penggelaran Patroli Presisi Spasio-Temporal (\textit{Precision Spatio-Temporal Policing}):} Alokasi armada patroli kepolisian harus disesuaikan secara dinamis dengan puncak ritme Shift 2 (14:00--21:59) pada koridor publik jalanan utama (*Street \& Sidewalk*). Penguatan visibilitas petugas di jalur transit komersial saat jam pulang kerja efektif menekan kejahatan properti tanpa menimbulkan gesekan sosial razia massal.
+    \item \textbf{Intervensi Struktural Lintas Sektoral pada Wilayah Kemiskinan Ekstrem:} Penanganan kejahatan di kawasan \textit{High Hardship} (Fuller Park, Englewood, West Garfield Park) tidak dapat dibebankan semata-mata pada penegakan hukum pidana. Pemerintah Kota Chicago harus memadukan intervensi keamanan dengan investasi infrastruktur ekonomi, perbaikan perumahan, dan penciptaan lapangan kerja pemuda guna memutus siklus marjinalisasi lingkungan secara berkelanjutan.
+    \item \textbf{Adopsi Sistem Penugasan Respons Berbantuan Prediksi Terdistribusi:} Integrasi model klasifikasi terdistribusi PySpark MLlib (AUC-ROC 0,8709) ke dalam sistem \textit{Computer-Aided Dispatch} (CAD) dapat membantu petugas memprioritaskan alokasi unit pembuktian cepat pada tindak pidana reaktif yang berpeluang tinggi mengalami pelarian pelaku di lokasi perkara.
+\end{enumerate}
+
+% ==============================================================================
+% DAFTAR PUSTAKA
+% ==============================================================================
+\section*{Daftar Pustaka}
+\addcontentsline{toc}{section}{Daftar Pustaka}
+
+\subsection*{A. Referensi Ilmiah \& Laporan Resmi Terunduh (Lokal / PDF Terverifikasi 100\%)}
+\begin{enumerate}[label={[\arabic*]}, leftmargin=2em]
+    \bibitem{campedelli2020} Campedelli, G. M., Favarin, S., Aziani, A., \& Piquero, A. R. (2020). \textit{Disentangling Community-level Changes in Crime Trends During the COVID-19 Pandemic in Chicago}. Crime Science / arXiv:2011.05658. Salinan lokal: \href{references/arxiv_2011_05658_chicago_crime_trends_community_areas.pdf}{\texttt{references/arxiv\_2011\_05658\_chicago\_crime\_trends\_community\_areas.pdf}}.
+    
+    \bibitem{dakalbab2023} Dakalbab, T., Talib, M. A., Elayan, M., Nassif, A. B., \& Nasir, Q. (2023). \textit{Crime Prediction Using Machine Learning and Deep Learning: A Systematic Review and Future Directions}. arXiv:2303.16310. Salinan lokal: \href{references/arxiv_2303_16310_crime_prediction_systematic_review.pdf}{\texttt{references/arxiv\_2303\_16310\_crime\_prediction\_systematic\_review.pdf}}.
+    
+    \bibitem{djon2023} Djon, D., Jhawar, J., Drumm, K., \& Tran, V. (2023). \textit{A Comparative Analysis of Multiple Methods for Predicting a Specific Type of Crime in the City of Chicago}. arXiv:2304.13464. Salinan lokal: \href{references/arxiv_2304_13464_predicting_crime_city_of_chicago.pdf}{\texttt{references/arxiv\_2304\_13464\_predicting\_crime\_city\_of\_chicago.pdf}}.
+    
+    \bibitem{skogan2016} Skogan, W. G. (2016). \textit{Stop-and-Frisk and Trust in Police in Chicago}. Institute for Policy Research Working Paper Series (WP-16-08), Northwestern University. Salinan lokal: \href{references/northwestern_ipr_2016_stop_and_frisk_chicago.pdf}{\texttt{references/northwestern\_ipr\_2016\_stop\_and\_frisk\_chicago.pdf}}.
+    
+    \bibitem{stec2018} Stec, A., \& Klabjan, D. (2018). \textit{Forecasting Crime with Deep Learning}. arXiv:1806.01486. Salinan lokal: \href{references/arxiv_1806_01486_forecasting_crime_deep_learning_chicago.pdf}{\texttt{references/arxiv\_1806\_01486\_forecasting\_crime\_deep\_learning\_chicago.pdf}}.
+    
+    \bibitem{towers2018} Towers, S., Chen, S., Malik, A., \& Ebert, D. (2018). \textit{Factors Influencing Temporal Patterns in Crime in a Large American City: A Predictive Analytics Perspective}. PLOS ONE, 13(10), e0205151. Salinan lokal: \href{references/plos_one_temporal_patterns_crime_chicago_2018.pdf}{\texttt{references/plos\_one\_temporal\_patterns\_crime\_chicago\_2018.pdf}}.
+    
+    \bibitem{doj2017} United States Department of Justice Civil Rights Division. (2017). \textit{Investigation of the Chicago Police Department}. Washington, D.C.: U.S. Department of Justice. Salinan lokal: \href{references/doj_chicago_police_findings_2017.pdf}{\texttt{references/doj\_chicago\_police_findings_2017.pdf}}.
+    
+    \bibitem{zaharia2012} Zaharia, M., Chowdhury, M., Das, T., Dave, A., Ma, J., McCauley, M., Franklin, M. J., Shenker, S., \& Stoica, I. (2012). \textit{Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing}. In Proceedings of the 9th USENIX Symposium on Networked Systems Design and Implementation (NSDI '12), pp. 15--28. Salinan lokal: \href{references/spark_rdd_nsdi_2012.pdf}{\texttt{references/spark\_rdd\_nsdi\_2012.pdf}}.
+\end{enumerate}
+
+\subsection*{B. Referensi Investigasi Jurnalistik \& Pemantau Kebijakan Terpercaya (Daring / Kredibel)}
+\begin{enumerate}[label={[\arabic*]}, resume, leftmargin=2em]
+    \bibitem{ipi2022} Illinois Policy Institute. (2022). \textit{Chicago Police Arrest Rate Hits Record Low, Solving Fewer Crimes}. Policy Analysis \& Crime Data Report. Akses daring: \url{https://www.illinoispolicy.org/chicago-police-arrest-rate-hits-record-low-solving-fewer-crimes/}.
+    
+    \bibitem{main2022} Main, F. (2022). \textit{Chicago Police Arrests Fall to Historic Low: CPD Made Arrests in Only 12\% of Reported Crimes}. Chicago Sun-Times Investigative Reporting. Akses daring: \url{https://chicago.suntimes.com/crime/2022/2/18/22934808/chicago-police-arrests-historic-low-violent-crime}.
+\end{enumerate}
+
+\end{document}
